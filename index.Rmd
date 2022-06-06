@@ -55,8 +55,6 @@ webpage
 ```
 
 ## Extracting records
-## Each element in the above web page has the following html format:
-## "<span class="short-desc"><strong> DATE </strong> LIE <span class="short-truth"><a href="URL"> EXPLANATION </a></span></span>"
 ```{r echo=TRUE}
 
 results <- webpage %>% html_nodes(".short-desc")
