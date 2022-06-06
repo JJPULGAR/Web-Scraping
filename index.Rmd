@@ -1,0 +1,126 @@
+---
+title: "index"
+author: "Jaime Pulgar"
+date: "6/6/2022"
+output: 
+  html_document:
+    self_contained: false
+---
+
+## Dataset:
+## "https://www.nytimes.com/interactive/2017/06/23/opinion/trumps-lies.html"
+
+## Packages R for Web Scraping
+## RCurl
+## httr
+## XML
+## rvest
+
+## Packages to process data
+## xml2
+
+## Other packages for data manipulation
+## stringr
+## dplyr
+## lubridate
+## readr
+## knitr
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(RCurl)
+library(httr)
+library(XML)
+library(rvest)
+library(xml2)
+library(stringr)
+library(dplyr)
+library(lubridate)
+library(readr)
+library(knitr)
+
+```
+
+## Disable warnings
+```{r echo=TRUE}
+options(warn = -1)
+```
+
+## Reading from web page - returns xml document
+```{r echo=TRUE}
+
+webpage <- read_html("https://www.nytimes.com/interactive/2017/06/23/opinion/trumps-lies.html")
+webpage
+
+```
+
+## Extracting records
+## Each element in the above web page has the following html format:
+## "<span class="short-desc"><strong> DATE </strong> LIE <span class="short-truth"><a href="URL"> EXPLANATION </a></span></span>"
+```{r echo=TRUE}
+
+results <- webpage %>% html_nodes(".short-desc")
+results
+
+```
+
+## Building dataset
+## We create an emthy list to receive the data that we will extract from the web page
+```{r include=FALSE}
+
+records <- vector("list", length = length(results))
+records
+
+```
+
+## Extranting the data
+```{r echo=TRUE}
+
+for (i in seq_along(results)) { 
+  date <- str_c(results[i] %>% 
+                  html_nodes("strong") %>% 
+                  html_text(trim = TRUE), ', 2017')  
+
+  lie <- str_sub(xml_contents(results[i])[2] %>% html_text(trim = TRUE), 2, -2)
+  
+
+  explanation <- str_sub(results[i] %>% 
+                           html_nodes(".short-truth") %>% 
+                           html_text(trim = TRUE), 2, -2) 
+  
+  url <- results[i] %>% html_nodes("a") %>% html_attr("href")
+  
+  records[[i]] <- data_frame(date = date, lie = lie, explanation = explanation, url = url)
+}
+
+```
+
+## Final dataset, bind_rows() function joins all rows of records object
+```{r echo=TRUE}
+
+df <- bind_rows(records)
+
+```
+
+## Transforming date field to Date format in R
+```{r echo=TRUE}
+
+df$date <- mdy(df$date)
+
+```
+
+## Exporting to CSV
+```{r echo=TRUE}
+
+write_csv(df, "lies_trump.csv")
+
+```
+
+## Reading the data
+```{r echo=TRUE}
+
+df <- read_csv("lies_trump.csv")
+df %>% 
+  kable(format = "html")
+
+```
